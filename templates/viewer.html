@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>LiveStream App - Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 text-gray-900 relative">
+    <h1 class="text-xl font-bold p-4">Watching Stream</h1>
+
+    <video
+      id="remoteVideo"
+      autoplay
+      playsinline
+      controls
+      class="w-full max-w-3xl mx-auto border shadow-md"
+    ></video>
+
+    <script>
+      const viewerId = window.location.pathname.split("/").pop();
+      const video = document.getElementById("remoteVideo");
+
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
+
+      let remoteDescSet = false;
+      const pendingCandidates = [];
+
+      pc.ontrack = (event) => {
+        const stream = event.streams[0];
+        if (stream && video.srcObject !== stream) {
+          video.srcObject = stream;
+          video.muted = true;
+        }
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: "candidate",
+              candidate: event.candidate,
+              id: viewerId,
+            })
+          );
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        console.log(`PeerConnection state: ${pc.connectionState}`);
+      };
+
+      const ws = new WebSocket(
+        `ws://${location.host}/ws/signal?role=viewer&stream=test&id=${viewerId}`
+      );
+
+      let offerTimeout = null;
+
+      ws.onopen = () => {
+        console.log("WebSocket connected (viewer)");
+        ws.send(JSON.stringify({ type: "viewer-joined", id: viewerId }));
+
+        offerTimeout = setTimeout(() => {
+          console.warn("No offer received in time, reloading viewer...");
+          location.reload();
+        }, 5000);
+      };
+
+      ws.onerror = (err) => console.error("WebSocket error:", err);
+      ws.onclose = () => console.log("WebSocket closed");
+
+      ws.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+        console.log("Viewer received message:", msg);
+
+        switch (msg.type) {
+          case "offer":
+            clearTimeout(offerTimeout);
+            await handleOffer(msg);
+            break;
+
+          case "candidate":
+            await handleCandidate(msg.candidate);
+            break;
+
+          default:
+            console.warn("Unknown message type:", msg.type);
+        }
+      };
+
+      async function handleOffer(msg) {
+        try {
+          if (pc.signalingState !== "stable") {
+            console.warn(
+              `Skipping offer: signalingState is ${pc.signalingState}`
+            );
+            return;
+          }
+
+          await pc.setRemoteDescription(new RTCSessionDescription(msg));
+          remoteDescSet = true;
+
+          for (const candidate of pendingCandidates) {
+            await pc.addIceCandidate(candidate);
+          }
+          pendingCandidates.length = 0;
+
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+
+          ws.send(
+            JSON.stringify({
+              type: "answer",
+              sdp: answer.sdp,
+              id: viewerId,
+            })
+          );
+          console.log("Viewer sent SDP answer");
+        } catch (err) {
+          console.error("Error handling offer:", err);
+        }
+      }
+
+      async function handleCandidate(candidateData) {
+        const candidate = new RTCIceCandidate(candidateData);
+        if (remoteDescSet) {
+          try {
+            await pc.addIceCandidate(candidate);
+            console.log("Added ICE candidate");
+          } catch (err) {
+            console.error("Error adding ICE candidate:", err);
+          }
+        } else {
+          pendingCandidates.push(candidate);
+          console.log("Buffered ICE candidate");
+        }
+      }
+    </script>
+  </body>
+</html>
