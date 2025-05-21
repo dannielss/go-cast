@@ -16,7 +16,7 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func StreamPage(w http.ResponseWriter, r *http.Request) {
-	Tmpl.ExecuteTemplate(w, "stream.html", nil)
+	Tmpl.ExecuteTemplate(w, "broadcaster.html", nil)
 }
 
 func ViewerPage(w http.ResponseWriter, r *http.Request) {

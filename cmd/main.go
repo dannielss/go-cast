@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"go-cast/cmd/handlers"
+	"go-cast/internal/handlers"
 	"html/template"
 	"log"
 	"net/http"
@@ -12,25 +11,22 @@ import (
 )
 
 func main() {
-	tmpl, err := template.ParseGlob(filepath.Join("templates", "*.html"))
+	r := mux.NewRouter()
+
+	tmpl, err := template.ParseGlob(filepath.Join("static", "*.html"))
 	if err != nil {
-		log.Fatal("Error parsing templates:", err)
+		log.Fatal("Error parsing pages:", err)
 	}
 	handlers.SetTemplate(tmpl)
 
-	router := mux.NewRouter()
-
 	// Page routes
-	router.HandleFunc("/", handlers.HomePage)
-	router.HandleFunc("/stream", handlers.StreamPage)
-	router.HandleFunc("/viewer/{id}", handlers.ViewerPage)
+	r.HandleFunc("/", handlers.HomePage)
+	r.HandleFunc("/broadcaster", handlers.StreamPage)
+	r.HandleFunc("/viewer", handlers.ViewerPage)
 
-	streamRegistry := handlers.NewStreamRegistry()
-	router.HandleFunc("/ws/signal", streamRegistry.HandleSignal)
+	// WebSocket handler
+	r.HandleFunc("/ws/{streamId}/{role}/{clientId}", handlers.WSHandler)
 
-	// rest
-	router.HandleFunc("/api/streams", streamRegistry.GetAllStreams).Methods("GET")
-
-	fmt.Println("Server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Println("Server started on :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
