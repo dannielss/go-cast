@@ -16,7 +16,7 @@
       const clientId = Math.random().toString(36).substr(2, 6);
       const protocol = location.protocol === "https:" ? "wss" : "ws";
       const ws = new WebSocket(
-        `${protocol}://${location.host}/ws/${streamId}/broadcaster/${clientId}`
+        `${protocol}://${location.host}/ws/${streamId}/viewer/${clientId}`
       );
       const remoteVideo = document.getElementById("remoteVideo");
 
