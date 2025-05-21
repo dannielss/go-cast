@@ -14,8 +14,9 @@
       const urlParams = new URLSearchParams(window.location.search);
       const streamId = urlParams.get("streamId");
       const clientId = Math.random().toString(36).substr(2, 6);
+      const protocol = location.protocol === "https:" ? "wss" : "ws";
       const ws = new WebSocket(
-        `ws://${location.host}/ws/${streamId}/viewer/${clientId}`
+        `${protocol}://${location.host}/ws/${streamId}/broadcaster/${clientId}`
       );
       const remoteVideo = document.getElementById("remoteVideo");
 
