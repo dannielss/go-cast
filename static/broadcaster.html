@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Broadcaster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="bg-gray-900 text-white flex flex-col items-center justify-center h-screen"
+  >
+    <h1 class="text-2xl font-bold mb-4">Broadcasting</h1>
+    <video id="localVideo" autoplay muted class="w-1/2 mb-4"></video>
+    <script>
+      const streamId = Math.random().toString(36).substr(2, 6);
+      const clientId = "broadcaster";
+      const ws = new WebSocket(
+        `ws://${location.host}/ws/${streamId}/broadcaster/${clientId}`
+      );
+
+      const peers = {};
+      const localVideo = document.getElementById("localVideo");
+
+      navigator.mediaDevices
+        .getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+          localVideo.srcObject = stream;
+
+          ws.onmessage = async ({ data }) => {
+            const msg = JSON.parse(data);
+
+            if (msg.type === "offer-request" && msg.from) {
+              const pc = createPeerConnection(msg.from);
+              peers[msg.from] = pc;
+
+              stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+              const offer = await pc.createOffer();
+              await pc.setLocalDescription(offer);
+
+              ws.send(
+                JSON.stringify({ type: "offer", to: msg.from, sdp: offer })
+              );
+            }
+
+            if (msg.type === "answer" && msg.from && peers[msg.from]) {
+              peers[msg.from].setRemoteDescription(
+                new RTCSessionDescription(msg.sdp)
+              );
+            }
+
+            if (msg.type === "ice-candidate" && peers[msg.from]) {
+              peers[msg.from].addIceCandidate(
+                new RTCIceCandidate(msg.candidate)
+              );
+            }
+          };
+
+          function createPeerConnection(to) {
+            const pc = new RTCPeerConnection({
+              iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+            });
+
+            pc.onicecandidate = (e) => {
+              if (e.candidate) {
+                ws.send(
+                  JSON.stringify({
+                    type: "ice-candidate",
+                    to,
+                    candidate: e.candidate,
+                  })
+                );
+              }
+            };
+
+            pc.onconnectionstatechange = () => {
+              if (
+                pc.connectionState === "disconnected" ||
+                pc.connectionState === "failed" ||
+                pc.connectionState === "closed"
+              ) {
+                pc.close();
+                delete peers[to];
+                console.log(`Peer ${to} removed from memory.`);
+              }
+            };
+
+            return pc;
+          }
+
+          alert(`Stream ID: ${streamId}`);
+        })
+        .catch((err) => {
+          console.error("Failed to get media:", err);
+          alert("Could not access camera/microphone.");
+        });
+    </script>
+  </body>
+</html>

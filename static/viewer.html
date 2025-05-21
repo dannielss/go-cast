@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="bg-black text-white flex flex-col items-center justify-center h-screen"
+  >
+    <h1 class="text-xl font-bold mb-4">Watching Stream</h1>
+    <video id="remoteVideo" autoplay controls class="w-1/2"></video>
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const streamId = urlParams.get("streamId");
+      const clientId = Math.random().toString(36).substr(2, 6);
+      const ws = new WebSocket(
+        `ws://${location.host}/ws/${streamId}/viewer/${clientId}`
+      );
+      const remoteVideo = document.getElementById("remoteVideo");
+
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: "offer-request" }));
+      };
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          ws.send(
+            JSON.stringify({ type: "ice-candidate", candidate: e.candidate })
+          );
+        }
+      };
+
+      pc.ontrack = (e) => {
+        remoteVideo.srcObject = e.streams[0];
+      };
+
+      ws.onmessage = async ({ data }) => {
+        const msg = JSON.parse(data);
+
+        if (msg.type === "stream-closed") {
+          alert("The stream has ended by the broadcaster.");
+
+          // Stop all tracks of the video stream
+          if (remoteVideo.srcObject) {
+            remoteVideo.srcObject.getTracks().forEach((track) => track.stop());
+            remoteVideo.srcObject = null;
+          }
+
+          pc.close();
+          ws.close();
+          return;
+        }
+
+        if (msg.type === "offer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({ type: "answer", sdp: answer }));
+        }
+
+        if (msg.type === "ice-candidate") {
+          pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+        }
+      };
+    </script>
+  </body>
+</html>
