@@ -112,6 +112,8 @@ func (m *StreamManager) RouteMessage(streamId, role, clientId string, msg []byte
 	if toExists {
 		viewerConn = stream.Viewers[to]
 	}
+
+	payload["total_viewers"] = len(stream.Viewers)
 	m.mu.Unlock()
 
 	switch role {
