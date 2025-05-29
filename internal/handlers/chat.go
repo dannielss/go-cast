@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"go-cast/internal/chat"
+	"go-cast/internal/config"
 	"log"
 	"net/http"
 
@@ -26,7 +27,7 @@ func (cs *ChatServer) ChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("ChatHandler called for streamId=%s clientId=%s", streamId, clientId)
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := config.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Upgrade error: %v", err)
 		return

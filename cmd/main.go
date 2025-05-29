@@ -21,16 +21,19 @@ func main() {
 	}
 	handlers.SetTemplate(tmpl)
 
-	chatHub := chat.NewHub()
-	cs := handlers.NewChatHandler(chatHub)
+	ch := chat.NewHub()
+	cs := handlers.NewChatHandler(ch)
 
-	streamManager := stream.NewStreamManager()
-	sh := handlers.NewStreamHandler(streamManager)
+	sm := stream.NewStreamManager()
+	sh := handlers.NewStreamHandler(sm)
 
 	// Page routes
 	r.HandleFunc("/", handlers.HomePage)
 	r.HandleFunc("/broadcaster", handlers.StreamPage)
 	r.HandleFunc("/viewer", handlers.ViewerPage)
+
+	// Rest API routes
+	r.HandleFunc("/api/streams", sh.GetStreamsHandler).Methods("GET")
 
 	// WebSocket handler
 	r.HandleFunc("/ws/chat/{streamId}/{clientId}", cs.ChatHandler)

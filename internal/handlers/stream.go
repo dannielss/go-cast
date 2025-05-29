@@ -1,20 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"go-cast/internal/config"
 	"go-cast/internal/stream"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 )
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 type Stream struct {
 	Manager *stream.StreamManager
@@ -31,7 +26,7 @@ func (s *Stream) StreamHandler(w http.ResponseWriter, r *http.Request) {
 	clientId := vars["clientId"]
 	fmt.Printf("WebSocket connection: streamId=%s, role=%s, clientId=%s\n", streamId, role, clientId)
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := config.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("WebSocket upgrade error:", err)
 		return
@@ -53,5 +48,15 @@ func (s *Stream) StreamHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		s.Manager.RouteMessage(streamId, role, clientId, msg)
+	}
+}
+
+func (s *Stream) GetStreamsHandler(w http.ResponseWriter, r *http.Request) {
+	streams := s.Manager.GetStreams()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(streams); err != nil {
+		log.Println("Error encoding streams:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 }

@@ -2,6 +2,7 @@ package stream
 
 import (
 	"encoding/json"
+	"go-cast/internal/models"
 	"log"
 	"sync"
 
@@ -130,4 +131,19 @@ func (m *StreamManager) RouteMessage(streamId, role, clientId string, msg []byte
 			}
 		}
 	}
+}
+
+func (m *StreamManager) GetStreams() []*models.StreamResponse {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	streamsCopy := make([]*models.StreamResponse, 0, len(m.streams))
+	for id, stream := range m.streams {
+		stream := &models.StreamResponse{
+			StreamID: id,
+			Viewers:  len(stream.Viewers),
+		}
+
+		streamsCopy = append(streamsCopy, stream)
+	}
+	return streamsCopy
 }
