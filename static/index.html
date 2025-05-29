@@ -95,8 +95,6 @@
       (async () => {
         const streams = await getStreams();
 
-        console.log("Fetched Streams:", streams);
-
         const streamsContainer = document.querySelector(".grid");
         streams.forEach((stream) => {
           const streamCard = document.createElement("div");
@@ -122,6 +120,24 @@
           streamsContainer.appendChild(streamCard);
         });
       })();
+
+      const searchInput = document.querySelector("input[type='text']");
+
+      function searchStreams(e) {
+        const query = e.target.value.toLowerCase().trim();
+
+        const streamCards = document.querySelectorAll(".grid > div");
+        streamCards.forEach((card) => {
+          const title = card.querySelector("h4").textContent.toLowerCase();
+          if (title.includes(query)) {
+            card.style.display = "block";
+          } else {
+            card.style.display = "none";
+          }
+        });
+      }
+
+      searchInput.addEventListener("input", (e) => searchStreams(e));
     </script>
   </body>
 </html>
