@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Broadcaster</title>
+    <title>StreamHub - Live Streams</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -212,8 +212,6 @@
 
             return pc;
           }
-
-          alert(`Stream ID: ${streamId}`);
         })
         .catch((err) => {
           console.error("Failed to get media:", err);
