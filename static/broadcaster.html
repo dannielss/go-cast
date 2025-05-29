@@ -146,7 +146,7 @@
           ws.onmessage = async ({ data }) => {
             const msg = JSON.parse(data);
 
-            if (msg.total_viewers) {
+            if (msg?.total_viewers) {
               const divs = document.querySelectorAll(".viewers");
 
               divs.forEach((item) => {
@@ -253,17 +253,17 @@
       });
 
       function appendMessage(from, content, timestamp) {
+        const avatarName =
+          from !== "You" ? (from === "broadcaster" ? "Streamer" : from) : "You";
         const messageHTML = `
             <div class="flex items-start space-x-2">
                 <img
-                  src="https://eu.ui-avatars.com/api/?name=${
-                    from === "You" ? "You" : "User"
-                  }"
+                  src="https://eu.ui-avatars.com/api/?name=${avatarName}"
                   alt="User"
                   class="w-6 h-6 rounded-full"
                 />
                 <div>
-                    <span class="text-sm font-bold text-blue-400">${from}</span>
+                    <span class="text-sm font-bold text-blue-400">${avatarName}</span>
                     <p class="text-sm">${content}</p>
                 </div>
             </div>
