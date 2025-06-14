@@ -124,17 +124,16 @@
       const clientId = "broadcaster";
       const protocol = location.protocol === "https:" ? "wss" : "ws";
 
-      // WebRTC signaling WS (existing)
+      // WebRTC signaling WS
       const ws = new WebSocket(
         `${protocol}://${location.host}/ws/${streamId}/broadcaster/${clientId}`
       );
 
-      // Chat WebSocket (new)
+      // Chat WebSocket
       const chatWs = new WebSocket(
         `${protocol}://${location.host}/ws/chat/${streamId}/${clientId}`
       );
 
-      // --- WebRTC code omitted for brevity, keep as is ---
       const peers = {};
       const localVideo = document.getElementById("localVideo");
 

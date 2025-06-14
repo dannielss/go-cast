@@ -113,12 +113,12 @@
       const clientId = Math.random().toString(36).substr(2, 6);
       const protocol = location.protocol === "https:" ? "wss" : "ws";
 
-      // WebRTC signaling WS (existing)
+      // WebRTC signaling WS
       const ws = new WebSocket(
         `${protocol}://${location.host}/ws/${streamId}/viewer/${clientId}`
       );
 
-      // Chat WebSocket (new)
+      // Chat WebSocket
       const chatWs = new WebSocket(
         `${protocol}://${location.host}/ws/chat/${streamId}/${clientId}`
       );
